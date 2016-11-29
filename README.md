@@ -1,6 +1,5 @@
 # libmin
 
----
 
 C Library that performs Limited-Memory BFGS minimization 
 
