@@ -29,6 +29,7 @@ program main_test
  allocate(xx(ndim),gradf(ndim))
 
 ! plan = libmin_init(ndim,nhist,tolerance)
+ ! An estimate about the inverse Hessian diagonal
  allocate(diag(ndim))
  diag(1) = 1.0 / 1.00 
  diag(2) = 1.0 / 0.25 
@@ -47,7 +48,7 @@ program main_test
 
    write(*,*) ' ===== iteration:',iter,' Function value: ',ff
    write(*,*) 'Input x:    ',xx(:)
-   write(*,*) 'Input grad: ',gradf(:)
+!   write(*,*) 'Input grad: ',gradf(:)
 
    info = libmin_execute(plan,xx,ff,gradf)
 

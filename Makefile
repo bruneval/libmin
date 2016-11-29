@@ -1,8 +1,8 @@
 FC=gfortran # -g -fbacktrace -fcheck=all
-CC=gcc # -g
+CC=gcc      # -g
 CPP=-cpp
 
-.PHONY: clean
+.PHONY: clean tarball
 
 all: test_c test_fortran libmin.a
 

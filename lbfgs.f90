@@ -351,7 +351,7 @@
         if( DEBUG ) then
           write(UNITDEBUG,*) 'HACK starting STP'
         endif
-        STP = 0.25_C_DOUBLE
+        STP = ONE ! 0.25_C_DOUBLE
       ELSE
         STP = ONE 
       ENDIF
