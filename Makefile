@@ -10,7 +10,7 @@ test_fortran: test_fortran.o libmin.a
 	$(FC) -o test_fortran test_fortran.o -L. -lmin 
 
 test_c: test_c.o libmin.a libmin.h
-	$(CC) -o test_c test_c.o  -L. -lmin -lgfortran
+	$(CC) -o test_c test_c.o  -L. -lmin -lgfortran -lm
 
 test_fortran.o: test_fortran.f90 libmin.f03
 	$(FC) -c $(CPP) test_fortran.f90

@@ -1,37 +1,76 @@
 /* testing */
 
 
+#include <stdio.h>
+#include <math.h>
 #include "libmin.h"
+
+double eval_function(double *xx) {
+  return  0.500 * pow( xx[0] - 1.0 , 2.0 )  
+        + 0.125 * pow( xx[1] - 3.0 , 2.0 )  
+        + 3.000 * pow( xx[2] + 2.0 , 2.0 ) ; 
+}
+void eval_gradient(double *xx, double *gradf) {
+  gradf[0] = 1.0  * ( xx[0] - 1.0 );
+  gradf[1] = 0.25 * ( xx[1] - 3.0 );
+  gradf[2] = 6.0  * ( xx[2] + 2.0 );
+}
+
 
 int main()
 {
  libmin_plan * plan;
- int ndim=3;
- int nhist=5;
- int info;
- double tolerance;
+ int const niter = 20;
+ int const ndim = 3;
+ int const nhist = 5;
+ double const tolerance = 1.0e-7;
  double *xx;
+ double *diag;
  double ff;
  double *gradf;
  int i;
+ int iter;
+ int info;
 
- tolerance = 1.0e-7;
 
  xx    = malloc(ndim*sizeof(double));
  gradf = malloc(ndim*sizeof(double));
+ diag  = malloc(ndim*sizeof(double));
 
- plan = libmin_init(ndim,nhist,tolerance);
+ diag[0] = 1.0 / 1.00;
+ diag[1] = 1.0 / 0.25;
+ diag[2] = 1.0 / 6.00;
 
- ff = -1.0;
- for(i=0; i<ndim; i++) {
-   xx[i]    = 0.01;
-   gradf[i] = 0.02;
+ plan = libmin_init_diag(ndim,nhist,tolerance,diag);
+
+ /* initial coordinates */
+ xx[0] =  1.11258 + 1.5415 * 1;
+ xx[1] =  1.11258 + 1.5415 * 2;
+ xx[2] =  1.11258 + 1.5415 * 3;
+ 
+ for(iter=0; iter<niter; iter++) {
+
+   ff = eval_function(xx);
+   eval_gradient(xx,gradf);
+
+   printf(" --- iteration: %d  , f= %e \n",iter,ff);
+   printf("X enter: %e %e %e \n",xx[0],xx[1],xx[2]);
+
+   info = libmin_execute(plan,xx,ff,gradf);
+
+   printf("X exit:  %e %e %e \n",xx[0],xx[1],xx[2]);
+
+   if( info == 0 ) { 
+     printf("Convergence reached\n");
+     break;
+   }
  }
 
- info = libmin_execute(plan,xx,ff,gradf);
+ printf("Final X:  %e %e %e \n",xx[0],xx[1],xx[2]);
 
  libmin_destroy(plan);
 
+ free(diag);
  free(xx);
  free(gradf);
 
