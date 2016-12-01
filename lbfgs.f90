@@ -6,7 +6,7 @@
 !     ----------------------------------------------------------------------
 !     This part of file contains the LBFGS algorithm and supporting routines
 !     ----------------------------------------------------------------------
-      SUBROUTINE LBFGS(N,M,X,F,G,DIAGCO,DIAG,EPS,W,IFLAG, &
+      SUBROUTINE LBFGS(N,M,X,F,G,DIAG,EPS,W,IFLAG, &
                        GTOL,STPMIN,STPMAX,STP,ITER,INFO,  &
                        LINE_DGINIT,LINE_FINIT, &
                        LINE_STX,LINE_FX,LINE_DGX, &
@@ -21,7 +21,6 @@
       integer(C_INT),intent(inout) :: ITER,IFLAG,INFO
       integer(C_INT),intent(in),value  :: N,M
       real(C_DOUBLE),intent(in),value  :: F,EPS
-      logical(C_BOOL),intent(in),value :: DIAGCO
       real(C_DOUBLE),intent(inout) :: X(N),DIAG(N),W(N*(2*M+1)+2*M)
       real(C_DOUBLE),intent(in)    :: G(N)
       real(C_DOUBLE),intent(inout) :: LINE_DGINIT,LINE_FINIT
@@ -64,7 +63,7 @@
 ! 
 !      The calling statement is 
 ! 
-!          CALL LBFGS(N,M,X,F,G,DIAGCO,DIAG,EPS,XTOL,W,IFLAG)
+!          CALL LBFGS(N,M,X,F,G,DIAG,EPS,XTOL,W,IFLAG)
 ! 
 !      where
 ! 
@@ -93,20 +92,8 @@
 !             the user to contain the components of the gradient G at
 !             the point X.
 ! 
-!     DIAGCO  is a logical(C_BOOL) variable that must be set to .TRUE. if the
-!             user  wishes to provide the diagonal matrix Hk0 at each
-!             iteration. Otherwise it should be set to .FALSE., in which
-!             case  LBFGS will use a default value described below. If
-!             DIAGCO is set to .TRUE. the routine will return at each
-!             iteration of the algorithm with IFLAG=2, and the diagonal
-!             matrix Hk0  must be provided in the array DIAG.
-! 
-! 
-!     DIAG    is a real(C_DOUBLE) array of length N. If DIAGCO=.TRUE.,
-!             then on initial entry or on re-entry with IFLAG=2, DIAG
-!             it must be set by the user to contain the values of the 
-!             diagonal matrix Hk0.  Restriction: all elements of DIAG
-!             must be positive.
+!     DIAG    is a real(C_DOUBLE) array of length N. 
+!             Restriction: all elements of DIAG must be positive.
 ! 
 ! 
 !     EPS     is a positive real(C_DOUBLE) variable that must be set by
@@ -268,9 +255,7 @@
       GO TO (10,172,100) IFLAG+1
 
      
-  10  GTOL = MAX( 1.0D-04 , 0.9D0 )
-   
-      IF( ANY( DIAG(:) <= ZERO ) ) GO TO 195
+  10  CONTINUE
       if( DEBUG ) WRITE(*,*) 'NO INITIAL DIAG'
 
       W(ISPT+1:ISPT+N) = -G(1:N) * DIAG(1:N)
@@ -286,27 +271,19 @@
       BOUND = MIN( ITER-1 , M)
 
       IF( ITER == 1 ) GO TO 165
-!
-      YS = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(ISPT+NPT+1:ISPT+NPT+N) )
-      IF( .NOT. DIAGCO ) THEN
-        if( DEBUG ) WRITE(*,*) ' -> UPDATE DIAG'
-        YY = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(IYPT+NPT+1:IYPT+NPT+N) )
-        DIAG(1:N)= YS / YY
-      ELSE
-         IFLAG=2
-         RETURN
-      ENDIF
 
- 100  CONTINUE
-      IF(DIAGCO) THEN
-        IF ( ANY(DIAG(1:N) <= ZERO)) GO TO 195
-      ENDIF
+      YS = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(ISPT+NPT+1:ISPT+NPT+N) )
+      if( DEBUG ) WRITE(*,*) ' -> UPDATE DIAG'
+      YY = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(IYPT+NPT+1:IYPT+NPT+N) )
+      DIAG(1:N)= YS / YY
+
 !
 !     COMPUTE -H*G USING THE FORMULA GIVEN IN: Nocedal, J. 1980,
 !     "Updating quasi-Newton matrices with limited storage",
 !     Mathematics of Computation, Vol.24, No.151, pp. 773-782.
 !     ---------------------------------------------------------
 !
+ 100  CONTINUE
       POINT = MODULO(ITER - 1,M)
       CP = POINT
       IF (POINT == 0) CP = M
@@ -376,7 +353,13 @@
         IFLAG=1
         RETURN
       ENDIF
-      IF (INFO /= 1) GO TO 190
+      IF (INFO /= 1) THEN
+        IFLAG=-1
+        WRITE(LP,'(/,a,i4,/,a,/,a,i4)') ' IFLAG= ',IFLAG,  &
+                                   ' LINE SEARCH FAILED ', &
+                                   ' ERROR RETURNED FROM LINE SEARCH ',INFO
+        RETURN
+      ENDIF
 !
 !     COMPUTE THE NEW STEP AND GRADIENT CHANGE 
 !     -----------------------------------------
@@ -402,24 +385,6 @@
 !     END OF MAIN ITERATION LOOP. ERROR EXITS.
 !     ------------------------------------------------------------
 !
- 190  IFLAG=-1
-      IF(LP>0) WRITE(LP,200) INFO
-      RETURN
- 195  IFLAG=-2
-      IF(LP>0) WRITE(LP,235) I
-      RETURN
-!
-!     FORMATS
-!     -------
-!
- 200  FORMAT(/' IFLAG= -1 ',/' LINE SEARCH FAILED. SEE'   &
-                ' DOCUMENTATION OF ROUTINE MCSRCH',/' ERROR RETURN' &
-                ' OF LINE SEARCH: INFO= ',I2,/   &
-                ' POSSIBLE CAUSES: FUNCTION OR GRADIENT ARE INCORRECT',/, &
-                ' OR INCORRECT TOLERANCES')  
- 235  FORMAT(/' IFLAG= -2',/' THE',I5,'-TH DIAGONAL ELEMENT OF THE',/, &
-             ' INVERSE HESSIAN APPROXIMATION IS NOT POSITIVE')
-
 
       END SUBROUTINE LBFGS
 
@@ -603,12 +568,11 @@
 !     COMPUTE THE INITIAL GRADIENT IN THE SEARCH DIRECTION
 !     AND CHECK THAT S IS A DESCENT DIRECTION.
 !
-      DGINIT = SUM( G(:) * S(:) )
+      DGINIT = DOT_PRODUCT( G , S )
 
       IF (DGINIT > ZERO) then
-         WRITE(LP,15)
-   15    FORMAT(/'  THE SEARCH DIRECTION IS NOT A DESCENT DIRECTION')
-         RETURN
+        WRITE(LP,'(a)') ' THE SEARCH DIRECTION IS NOT A DESCENT'
+        RETURN
       ENDIF
 !
 !     INITIALIZE LOCAL VARIABLES.

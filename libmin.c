@@ -61,7 +61,10 @@ libmin_plan * libmin_init_diag(int ndim, int history_record, double tolerance, d
   p->stpmax = 1.0e+20;
   p->stp    = 1.0;
   
-  for(i=0; i<ndim; i++) p->diag[i] = diag[i];
+  for(i=0; i<ndim; i++) {
+    assert( diag[i] > 0.0 );
+    p->diag[i] = diag[i];
+  }
 
   assert(p->ndim > 0);
   assert(p->history_record > 0);
@@ -82,11 +85,10 @@ void libmin_destroy(libmin_plan * p)
 
 int libmin_execute(libmin_plan *p, double *x, double f, double *gradf)
 {
- bool diagco   = false;
  double stpmin = 1.0e-20;
  double stpmax = 1.0e+20;
 
- lbfgs(p->ndim, p->history_record, x, f, gradf, diagco, p->diag, p->tolerance, p->work, &(p->status),
+ lbfgs(p->ndim, p->history_record, x, f, gradf, p->diag, p->tolerance, p->work, &(p->status),
        &(p->gtol), stpmin, stpmax, &(p->stp), &(p->iter), &(p->line_info),
        &(p->line_dginit), &(p->line_finit),
        &(p->line_stx),  &(p->line_fx),  &(p->line_dgx),

@@ -4,13 +4,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-/*
- logical,parameter,private :: diagco=.FALSE.
- integer,parameter,private :: iprint(2) = [-1,0]
- !internal set-up of the LBFGS subroutine ...
- integer,protected  :: MP,LP
-*/
-
 
 typedef struct { 
   int status;            // info
@@ -48,7 +41,7 @@ libmin_plan * libmin_init_diag(int ndim, int history_record, double tolerance, d
 
 int libmin_execute(libmin_plan *p, double *x, double f, double *gradf);
 void libmin_destroy(libmin_plan * p);
-void lbfgs(int ndim, int history_record, double *x, double f, double *gradf, bool diagco, double *diag, double tolerance, double *work, int *status,
+void lbfgs(int ndim, int history_record, double *x, double f, double *gradf, double *diag, double tolerance, double *work, int *status,
        double *gtol, double stpmin, double stpmax, double *stp, int *iter, int *line_info,
        double *line_dginit, double *line_finit,
        double *line_stx,  double *line_fx,  double *line_dgx,
