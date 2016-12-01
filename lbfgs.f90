@@ -265,7 +265,7 @@
 !     MAIN ITERATION LOOP
 !    --------------------
 !
- 80   ITER  = ITER+1
+ 80   ITER  = ITER + 1
       INFO  = 0
       BOUND = MIN( ITER-1 , M)
 
