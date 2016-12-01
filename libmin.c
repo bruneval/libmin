@@ -89,7 +89,8 @@ int libmin_execute(libmin_plan *p, double *x, double f, double *gradf)
  double stpmax = 1.0e+20;
 
  lbfgs(p->ndim, p->history_record, x, f, gradf, p->diag, p->tolerance, p->work, &(p->status),
-       &(p->gtol), stpmin, stpmax, &(p->stp), &(p->iter), &(p->line_info),
+       &(p->gtol), stpmin, stpmax, &(p->stp), &(p->iter), 
+       &(p->line_info), &(p->line_nfev),
        &(p->line_dginit), &(p->line_finit),
        &(p->line_stx),  &(p->line_fx),  &(p->line_dgx),
        &(p->line_sty),  &(p->line_fy),  &(p->line_dgy),

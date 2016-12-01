@@ -6,19 +6,20 @@
 !     ----------------------------------------------------------------------
 !     This part of file contains the LBFGS algorithm and supporting routines
 !     ----------------------------------------------------------------------
-      SUBROUTINE LBFGS(N,M,X,F,G,DIAG,EPS,W,IFLAG, &
-                       GTOL,STPMIN,STPMAX,STP,ITER,INFO,  &
-                       LINE_DGINIT,LINE_FINIT, &
-                       LINE_STX,LINE_FX,LINE_DGX, &
-                       LINE_STY,LINE_FY,LINE_DGY, &
-                       LINE_STMIN,LINE_STMAX, &
+      SUBROUTINE LBFGS(N,M,X,F,G,DIAG,EPS,W,IFLAG,  &
+                       GTOL,STPMIN,STPMAX,STP,ITER, &
+                       INFO, NFEV,                  &
+                       LINE_DGINIT,LINE_FINIT,      &
+                       LINE_STX,LINE_FX,LINE_DGX,   &
+                       LINE_STY,LINE_FY,LINE_DGY,   &
+                       LINE_STMIN,LINE_STMAX,       &
                        LINE_BRACKT,LINE_STAGE1,LINE_INFOC) BIND(C)
       use iso_c_binding
       implicit none
       real(C_DOUBLE),intent(inout) :: GTOL
       real(C_DOUBLE),intent(in),value :: STPMIN,STPMAX
       real(C_DOUBLE),intent(inout) :: STP
-      integer(C_INT),intent(inout) :: ITER,IFLAG,INFO
+      integer(C_INT),intent(inout) :: ITER,IFLAG,INFO,NFEV
       integer(C_INT),intent(in),value  :: N,M
       real(C_DOUBLE),intent(in),value  :: F,EPS
       real(C_DOUBLE),intent(inout) :: X(N),DIAG(N),W(N*(2*M+1)+2*M)
@@ -189,8 +190,6 @@
 !        STPMIN and STPMAX.
 ! 
 !
-!  GENERAL INFORMATION
-! 
 !    Other routines called directly:   MCSRCH
 ! 
 !    Input/Output  :  No input; diagnostic messages on unit MP and
@@ -201,7 +200,7 @@
 !     THE WORK VECTOR W IS DIVIDED AS FOLLOWS:
 !     ---------------------------------------
 !     THE FIRST N LOCATIONS ARE USED TO STORE THE GRADIENT AND
-!         OTHER TEMPORARY INFORMATION.
+!         OTHER TEMPORARY DATA
 !     LOCATIONS (N+1)...(N+M) STORE THE SCALARS RHO.
 !     LOCATIONS (N+M+1)...(N+2M) STORE THE NUMBERS ALPHA USED
 !         IN THE FORMULA THAT COMPUTES H*G.
@@ -220,7 +219,7 @@
 
       real(C_DOUBLE) :: GNORM,FTOL,YS,YY,SQ,YR,BETA,XNORM
       integer(C_INT) :: POINT,ISPT,IYPT,MAXFEV, &
-              BOUND,NPT,CP,I,NFEV,INMC,IYCN,ISCN
+              BOUND,NPT,CP,I,INMC,IYCN,ISCN
 !
 !
 !     INITIALIZE
@@ -245,7 +244,7 @@
 
 !     PARAMETERS FOR LINE SEARCH ROUTINE
       FTOL = 1.0D-4
-      MAXFEV= 20
+      MAXFEV = 20
 
       ISPT= N+2*M
       IYPT= ISPT+N*M     
@@ -349,6 +348,7 @@
       if( DEBUG ) then
         write(UNITDEBUG,*) 'X:',X(:)
       endif
+
       IF (INFO  ==  -1) THEN
         IFLAG=1
         RETURN
@@ -401,18 +401,18 @@
                         BRACKT,STAGE1,INFOC)
       use iso_c_binding
       implicit none
-      real(C_DOUBLE),intent(in) :: GTOL,STPMIN,STPMAX
-      integer(C_INT),intent(in)    :: N,MAXFEV
-      integer,intent(inout) :: INFO,NFEV
-      real(C_DOUBLE),intent(in)    :: F,FTOL
-      real(C_DOUBLE),intent(inout) :: STP,DGINIT,FINIT
-      real(C_DOUBLE),intent(in)    :: G(N)
-      real(C_DOUBLE),intent(inout) :: X(N),S(N),WA(N)
-      logical(C_BOOL),intent(inout)  :: BRACKT,STAGE1
-      integer(C_INT),intent(inout)          :: INFOC
-      real(C_DOUBLE),intent(inout) :: STX,FX,DGX
-      real(C_DOUBLE),intent(inout) :: STY,FY,DGY
-      real(C_DOUBLE),intent(inout) :: STMIN,STMAX
+      real(C_DOUBLE),intent(in)     :: GTOL,STPMIN,STPMAX
+      integer(C_INT),intent(in)     :: N,MAXFEV
+      integer,intent(inout)         :: INFO,NFEV
+      real(C_DOUBLE),intent(in)     :: F,FTOL
+      real(C_DOUBLE),intent(inout)  :: STP,DGINIT,FINIT
+      real(C_DOUBLE),intent(in)     :: G(N)
+      real(C_DOUBLE),intent(inout)  :: X(N),S(N),WA(N)
+      logical(C_BOOL),intent(inout) :: BRACKT,STAGE1
+      integer(C_INT),intent(inout)  :: INFOC
+      real(C_DOUBLE),intent(inout)  :: STX,FX,DGX
+      real(C_DOUBLE),intent(inout)  :: STY,FY,DGY
+      real(C_DOUBLE),intent(inout)  :: STMIN,STMAX
 !
 !                     SUBROUTINE MCSRCH
 !                
@@ -563,7 +563,7 @@
 !
       IF (N <= 0 .OR. STP <= ZERO .OR. FTOL < ZERO .OR.  &
           GTOL < ZERO .OR. XTOL < ZERO .OR. STPMIN < ZERO &
-          .OR. STPMAX < STPMIN .OR. MAXFEV <= 0) RETURN
+          .OR. STPMAX < STPMIN ) RETURN
 !
 !     COMPUTE THE INITIAL GRADIENT IN THE SEARCH DIRECTION
 !     AND CHECK THAT S IS A DESCENT DIRECTION.
@@ -651,6 +651,7 @@
       IF ((BRACKT .AND. (STP <= STMIN .OR. STP >= STMAX)) &
          .OR. NFEV >= MAXFEV-1 .OR. INFOC  ==  0 &
          .OR. (BRACKT .AND. STMAX-STMIN <= XTOL*STMAX)) STP = STX
+
       if( DEBUG ) then
         write(UNITDEBUG,*) 'BRACKT',BRACKT
         write(UNITDEBUG,*) (BRACKT .AND. (STP <= STMIN .OR. STP >= STMAX))

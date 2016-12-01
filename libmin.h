@@ -20,6 +20,7 @@ typedef struct {
 
   int    line_info;
   int    line_infoc;
+  int    line_nfev;
   double line_dginit;
   double line_finit;
   double line_stx;
@@ -43,6 +44,7 @@ int libmin_execute(libmin_plan *p, double *x, double f, double *gradf);
 void libmin_destroy(libmin_plan * p);
 void lbfgs(int ndim, int history_record, double *x, double f, double *gradf, double *diag, double tolerance, double *work, int *status,
        double *gtol, double stpmin, double stpmax, double *stp, int *iter, int *line_info,
+       int *line_nfev,
        double *line_dginit, double *line_finit,
        double *line_stx,  double *line_fx,  double *line_dgx,
        double *line_sty,  double *line_fy,  double *line_dgy,
