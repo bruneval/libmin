@@ -1,32 +1,9 @@
+! This file is part of libmin
 #define XTOL 1.0e-17
 #define DEBUG .FALSE.
 #define UNITDEBUG 101
 
 !
-!
-!     **************************
-!     LINE SEARCH ROUTINE MCSRCH
-!     **************************
-!
-      SUBROUTINE MCSRCH(N,X,F,G,S,STP,FTOL,MAXFEV,INFO,NFEV,WA, &
-                        GTOL,STPMIN,STPMAX,DGINIT,FINIT, &
-                        STX,FX,DGX,STY,FY,DGY,STMIN,STMAX, &
-                        BRACKT,STAGE1,INFOC)
-      use, intrinsic :: iso_c_binding
-      use, intrinsic :: iso_fortran_env, only : ERROR_UNIT
-      implicit none
-      real(C_DOUBLE),intent(in)     :: GTOL,STPMIN,STPMAX
-      integer(C_INT),intent(in)     :: N,MAXFEV
-      integer,intent(inout)         :: INFO,NFEV
-      real(C_DOUBLE),intent(in)     :: F,FTOL
-      real(C_DOUBLE),intent(inout)  :: STP,DGINIT,FINIT
-      real(C_DOUBLE),intent(in)     :: G(N)
-      real(C_DOUBLE),intent(inout)  :: X(N),S(N),WA(N)
-      logical(C_BOOL),intent(inout) :: BRACKT,STAGE1
-      integer(C_INT),intent(inout)  :: INFOC
-      real(C_DOUBLE),intent(inout)  :: STX,FX,DGX
-      real(C_DOUBLE),intent(inout)  :: STY,FY,DGY
-      real(C_DOUBLE),intent(inout)  :: STMIN,STMAX
 !
 !                     SUBROUTINE MCSRCH
 !                
@@ -148,6 +125,25 @@
 !     JORGE J. MORE', DAVID J. THUENTE
 !
 !     **********
+      SUBROUTINE MCSRCH(N,X,F,G,S,STP,FTOL,MAXFEV,INFO,NFEV,WA, &
+                        GTOL,STPMIN,STPMAX,DGINIT,FINIT, &
+                        STX,FX,DGX,STY,FY,DGY,STMIN,STMAX, &
+                        BRACKT,STAGE1,INFOC)
+      use, intrinsic :: iso_c_binding
+      use, intrinsic :: iso_fortran_env, only : ERROR_UNIT
+      implicit none
+      real(C_DOUBLE),intent(in)     :: GTOL,STPMIN,STPMAX
+      integer(C_INT),intent(in)     :: N,MAXFEV
+      integer,intent(inout)         :: INFO,NFEV
+      real(C_DOUBLE),intent(in)     :: F,FTOL
+      real(C_DOUBLE),intent(inout)  :: STP,DGINIT,FINIT
+      real(C_DOUBLE),intent(in)     :: G(N)
+      real(C_DOUBLE),intent(inout)  :: X(N),S(N),WA(N)
+      logical(C_BOOL),intent(inout) :: BRACKT,STAGE1
+      integer(C_INT),intent(inout)  :: INFOC
+      real(C_DOUBLE),intent(inout)  :: STX,FX,DGX
+      real(C_DOUBLE),intent(inout)  :: STY,FY,DGY
+      real(C_DOUBLE),intent(inout)  :: STMIN,STMAX
       integer(C_INT) :: J
       real(C_DOUBLE) :: DG,DGM,DGTEST,DGXM,DGYM, &
              FTEST1,FM,FXM,FYM,WIDTH,WIDTH1
@@ -298,7 +294,7 @@
          DGXM = DGX - DGTEST
          DGYM = DGY - DGTEST
 !
-!        CALL CSTEP TO UPDATE THE INTERVAL OF UNCERTAINTY
+!        CALL MCSTEP TO UPDATE THE INTERVAL OF UNCERTAINTY
 !        AND TO COMPUTE THE NEW STEP.
 !
          CALL MCSTEP(STX,FXM,DGXM,STY,FYM,DGYM,STP,FM,DGM,BRACKT,STMIN,STMAX,INFOC)

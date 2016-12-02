@@ -66,7 +66,7 @@
 !         where ||.|| denotes the Euclidean norm.
 ! 
 ! W       is a real(C_DOUBLE) array of length N(2M+1)+2M used as
-!         workspace for LBFGS. This array must not be altered by the
+!         workspace for lbfgs. This array must not be altered by the
 !         user.
 ! 
 ! IFLAG   is an integer(C_INT) variable that must be set to 0 on initial entry
@@ -137,7 +137,8 @@
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 !
 
-subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
+!=======================================================
+subroutine lbfgs(N,M,X,F,G,DIAG,W,IFLAG,      &
                  GTOL,STPMIN,STPMAX,STP,ITER, &
                  INFO, NFEV,                  &
                  LINE_DGINIT,LINE_FINIT,      &
@@ -189,10 +190,10 @@ subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
  endif
 
 !
-! INITIALIZE
+! Initialize
 !-----------
 
-! PARAMETERS FOR LINE SEARCH ROUTINE
+! Parameters for line search routine
  FTOL = 1.0D-4
  MAXFEV = 20
 
@@ -207,9 +208,13 @@ subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
  !
  ! Entering the subroutine with a new position and gradient
  ! or entering for the first time ever
- if( IFLAG == 1 ) then
+ if( IFLAG /= 1 ) then
+   W(ISPT+1:ISPT+N) = -G(1:N) * DIAG(1:N)
+
+ else
+
    if( DEBUG ) then
-     write(UNITDEBUG,*) 'INFO before second call to MCSRCH',INFO
+     write(UNITDEBUG,*) 'INFO before first  call to MCSRCH',INFO
    endif
    call MCSRCH(N,X,F,G,W(ISPT+POINT*N+1),STP,FTOL,MAXFEV,INFO,NFEV, &
                DIAG,GTOL,STPMIN,STPMAX,LINE_DGINIT,LINE_FINIT, &
@@ -218,13 +223,11 @@ subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
                LINE_STMIN,LINE_STMAX, &
                LINE_BRACKT,LINE_STAGE1,LINE_INFOC)
    !
-   ! COMPUTE THE NEW STEP AND GRADIENT CHANGE 
+   ! Compute the new step and gradient change 
    !
    NPT = POINT * N
    W(ISPT+NPT+1:ISPT+NPT+N) = STP * W(ISPT+NPT+1:ISPT+NPT+N)
    W(IYPT+NPT+1:IYPT+NPT+N) = G(1:N) - W(1:N)
-
- IF( ITER /= 1 ) THEN
 
    YS = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(ISPT+NPT+1:ISPT+NPT+N) )
    YY = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(IYPT+NPT+1:IYPT+NPT+N) )
@@ -238,45 +241,44 @@ subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
 !
    POINT = MODULO(ITER - 1,M)
    CP = POINT
-   IF (POINT == 0) CP = M
-   W(N+CP)= ONE/YS
-   W(1:N)= -G(1:N)
+   if (POINT == 0) CP = M
+
+   W(N+CP) = ONE / YS
+   W(1:N)  = -G(1:N)
 
    CP = POINT
-   DO I= 1,BOUND
-      CP = CP - 1
-      IF (CP ==  -1) CP = M - 1
-      SQ= DOT_PRODUCT(W(ISPT+CP*N+1:ISPT+CP*N+N),W(1:N))
-      INMC=N+M+CP+1
-      IYCN=IYPT+CP*N
-      W(INMC)= W(N+CP+1) * SQ
-      W(1:N) = W(1:N) - W(INMC) * W(IYCN+1:IYCN+N)
-   ENDDO     
+   do I= 1,BOUND
+     CP = CP - 1
+     if (CP ==  -1) CP = M - 1
+     SQ = DOT_PRODUCT(W(ISPT+CP*N+1:ISPT+CP*N+N),W(1:N))
+     INMC = N + M + CP + 1
+     IYCN = IYPT + CP * N
+     W(INMC)= W(N+CP+1) * SQ
+     W(1:N) = W(1:N) - W(INMC) * W(IYCN+1:IYCN+N)
+   enddo     
 
    W(1:N) = DIAG(1:N) * W(1:N)
 
-   DO I=1,BOUND
-      YR = DOT_PRODUCT(W(IYPT+CP*N+1:IYPT+CP*N+N),W(1:N))
-      BETA = W(N+CP+1) * YR
-      INMC = N + M + CP + 1
-      BETA = W(INMC) - BETA
-      ISCN = ISPT + CP * N
-      W(1:N) = W(1:N) + BETA * W(ISCN+1:ISCN+N)
-      CP = CP + 1
-      IF (CP == M) CP = 0
-   ENDDO
+   do I=1,BOUND
+     YR = DOT_PRODUCT(W(IYPT+CP*N+1:IYPT+CP*N+N),W(1:N))
+     BETA = W(N+CP+1) * YR
+     INMC = N + M + CP + 1
+     BETA = W(INMC) - BETA
+     ISCN = ISPT + CP * N
+     W(1:N) = W(1:N) + BETA * W(ISCN+1:ISCN+N)
+     CP = CP + 1
+     if (CP == M) CP = 0
+   enddo
  
 !
 !  STORE THE NEW SEARCH DIRECTION
    W(ISPT+POINT*N+1:ISPT+POINT*N+N) = W(1:N)
 
- ENDIF
- else
-   W(ISPT+1:ISPT+N) = -G(1:N) * DIAG(1:N)
  endif
+
 !
-!OBTAIN THE ONE-DIMENSIONAL MINIMIZER OF THE FUNCTION 
-!BY USING THE LINE SEARCH ROUTINE MCSRCH
+! Obtain the one-dimensional minimizer of the function 
+! by using the line search routine mcsrch
 !----------------------------------------------------
  NFEV = 0
  STP = ONE
@@ -284,7 +286,7 @@ subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
 
  INFO  = 0
 
- CALL MCSRCH(N,X,F,G,W(ISPT+POINT*N+1),STP,FTOL,MAXFEV,INFO,NFEV, &
+ call MCSRCH(N,X,F,G,W(ISPT+POINT*N+1),STP,FTOL,MAXFEV,INFO,NFEV, &
              DIAG,GTOL,STPMIN,STPMAX,LINE_DGINIT,LINE_FINIT, &
              LINE_STX,LINE_FX,LINE_DGX, &
              LINE_STY,LINE_FY,LINE_DGY, &
@@ -294,23 +296,18 @@ subroutine LBFGS(N,M,X,F,G,DIAG,W,IFLAG,      &
    write(UNITDEBUG,*) 'INFO after  second call to MCSRCH',INFO
  endif
 
- IF (INFO  ==  -1) THEN
+ if (INFO  ==  -1) then
    IFLAG = 1
-   RETURN
+   return
  else
    IFLAG = -1
-   WRITE(ERROR_UNIT,'(/,a,i4,/,a,/,a,i4)') ' IFLAG= ',IFLAG,  &
+   write(ERROR_UNIT,'(/,a,i4,/,a,/,a,i4)') ' IFLAG= ',IFLAG,  &
                               ' LINE SEARCH FAILED ', &
-                              ' ERROR RETURNED FROM LINE SEARCH ',INFO
-   RETURN
- ENDIF
+                              ' ERROR rETURNED FROM LINE SEARCH ',INFO
+   return
+ endif
+
+ end subroutine lbfgs
 
 
-!
-!------------------------------------------------------------
-!END OF MAIN ITERATION LOOP. ERROR EXITS.
-!------------------------------------------------------------
-!
-
- END SUBROUTINE LBFGS
-
+!=======================================================
