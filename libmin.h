@@ -9,7 +9,6 @@ typedef struct {
   int status;            // info
   int ndim;              // dimension of the minimization space
   int history_record;    // nhist
-  double tolerance;      // eps
   double gtol;
   double stpmin;
   double stpmax;
@@ -37,12 +36,12 @@ typedef struct {
 } libmin_plan;
 
 
-libmin_plan * libmin_init(int ndim, int history_record, double tolerance);
-libmin_plan * libmin_init_diag(int ndim, int history_record, double tolerance, double *diag);
+libmin_plan * libmin_init(int ndim, int history_record);
+libmin_plan * libmin_init_diag(int ndim, int history_record, double *diag);
 
 int libmin_execute(libmin_plan *p, double *x, double f, double *gradf);
 void libmin_destroy(libmin_plan * p);
-void lbfgs(int ndim, int history_record, double *x, double f, double *gradf, double *diag, double tolerance, double *work, int *status,
+void lbfgs(int ndim, int history_record, double *x, double f, double *gradf, double *diag, double *work, int *status,
        double *gtol, double stpmin, double stpmax, double *stp, int *iter, int *line_info,
        int *line_nfev,
        double *line_dginit, double *line_finit,

@@ -8,7 +8,7 @@
 #include "libmin.h"
 
 
-libmin_plan * libmin_init(int ndim, int history_record, double tolerance)
+libmin_plan * libmin_init(int ndim, int history_record)
 {
   int i;
   int nwork;
@@ -19,7 +19,6 @@ libmin_plan * libmin_init(int ndim, int history_record, double tolerance)
   p->iter   = 0;
   p->ndim = ndim;
   p->history_record = history_record;
-  p->tolerance = tolerance;
   p->diag = malloc(ndim*sizeof(double));
 
   nwork = ndim * ( 2 * history_record + 1 ) + 2 * history_record;
@@ -39,7 +38,7 @@ libmin_plan * libmin_init(int ndim, int history_record, double tolerance)
 }
 
 
-libmin_plan * libmin_init_diag(int ndim, int history_record, double tolerance, double *diag)
+libmin_plan * libmin_init_diag(int ndim, int history_record, double *diag)
 {
   int i;
   int nwork;
@@ -50,7 +49,6 @@ libmin_plan * libmin_init_diag(int ndim, int history_record, double tolerance, d
   p->iter   = 0;
   p->ndim = ndim;
   p->history_record = history_record;
-  p->tolerance = tolerance;
   p->diag = malloc(ndim*sizeof(double));
 
   nwork = ndim * ( 2 * history_record + 1 ) + 2 * history_record;
@@ -88,7 +86,7 @@ int libmin_execute(libmin_plan *p, double *x, double f, double *gradf)
  double stpmin = 1.0e-20;
  double stpmax = 1.0e+20;
 
- lbfgs(p->ndim, p->history_record, x, f, gradf, p->diag, p->tolerance, p->work, &(p->status),
+ lbfgs(p->ndim, p->history_record, x, f, gradf, p->diag, p->work, &(p->status),
        &(p->gtol), stpmin, stpmax, &(p->stp), &(p->iter), 
        &(p->line_info), &(p->line_nfev),
        &(p->line_dginit), &(p->line_finit),

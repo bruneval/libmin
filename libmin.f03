@@ -2,20 +2,18 @@
 
  interface
 
-   type(C_PTR) function libmin_init(ndim,nhess,tolerance) BIND(C)
+   type(C_PTR) function libmin_init(ndim,nhess) BIND(C)
      use,intrinsic :: iso_c_binding
      implicit none
      integer(C_INT),intent(in),value :: ndim
      integer(C_INT),intent(in),value :: nhess
-     real(C_DOUBLE),intent(in),value :: tolerance
    end function libmin_init
 
-   type(C_PTR) function libmin_init_diag(ndim,nhess,tolerance,diag) BIND(C)
+   type(C_PTR) function libmin_init_diag(ndim,nhess,diag) BIND(C)
      use,intrinsic :: iso_c_binding
      implicit none
      integer(C_INT),intent(in),value :: ndim
      integer(C_INT),intent(in),value :: nhess
-     real(C_DOUBLE),intent(in),value :: tolerance
      real(C_DOUBLE),intent(in)       :: diag(*)
    end function libmin_init_diag
 

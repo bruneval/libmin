@@ -24,6 +24,7 @@ int main()
  int const ndim = 3;
  int const nhist = 5;
  double const tolerance = 1.0e-7;
+ double grad_norm2;
  double *xx;
  double *diag;
  double ff;
@@ -41,7 +42,7 @@ int main()
  diag[1] = 1.0 / 0.25;
  diag[2] = 1.0 / 6.00;
 
- plan = libmin_init_diag(ndim,nhist,tolerance,diag);
+ plan = libmin_init_diag(ndim,nhist,diag);
 
  /* initial coordinates */
  xx[0] =  1.11258 + 1.5415 * 1;
@@ -56,14 +57,20 @@ int main()
    printf(" --- iteration: %d  , f= %e \n",iter,ff);
    printf("X enter: %e %e %e \n",xx[0],xx[1],xx[2]);
 
+   grad_norm2 = 0.0;
+   for(i=0; i<ndim; i++) {
+     grad_norm2 += gradf[i] * gradf[i];
+   }
+
+   if( grad_norm2 < tolerance ) {
+     printf("Convergence reached\n");
+     break;
+   } 
+
    info = libmin_execute(plan,xx,ff,gradf);
 
    printf("X exit:  %e %e %e \n",xx[0],xx[1],xx[2]);
 
-   if( info == 0 ) { 
-     printf("Convergence reached\n");
-     break;
-   }
  }
 
  printf("Final X:  %e %e %e \n",xx[0],xx[1],xx[2]);

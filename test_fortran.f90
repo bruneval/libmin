@@ -28,13 +28,13 @@ program main_test
  tolerance = 1.0e-7
  allocate(xx(ndim),gradf(ndim))
 
-! plan = libmin_init(ndim,nhist,tolerance)
+! plan = libmin_init(ndim,nhist)
  ! An estimate about the inverse Hessian diagonal
  allocate(diag(ndim))
  diag(1) = 1.0 / 1.00 
  diag(2) = 1.0 / 0.25 
  diag(3) = 1.0 / 6.00 
- plan = libmin_init_diag(ndim,nhist,tolerance,diag)
+ plan = libmin_init_diag(ndim,nhist,diag)
  deallocate(diag)
 
  do idim=1,ndim
@@ -48,7 +48,12 @@ program main_test
 
    write(*,*) ' ===== iteration:',iter,' Function value: ',ff
    write(*,*) 'Input x:    ',xx(:)
-!   write(*,*) 'Input grad: ',gradf(:)
+
+   if( NORM2(gradf) < tolerance ) then
+     write(*,*) 'Convergence reached'
+     write(*,*) 'Minarg f:',xx(:)
+     exit
+   endif
 
    info = libmin_execute(plan,xx,ff,gradf)
 
@@ -59,11 +64,6 @@ program main_test
      stop 'STOP'
    endif
 
-   if( info == 0 ) then
-     write(*,*) 'Convergence reached'
-     write(*,*) 'Minarg f:',xx(:)
-     exit
-   endif
  enddo
 
 
