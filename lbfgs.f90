@@ -1,4 +1,3 @@
-#define LP 6
 #define XTOL 1.0e-17
 #define DEBUG .FALSE.
 #define UNITDEBUG 101
@@ -6,7 +5,7 @@
 !     ----------------------------------------------------------------------
 !     This part of file contains the LBFGS algorithm and supporting routines
 !     ----------------------------------------------------------------------
-      SUBROUTINE LBFGS(N,M,X,F,G,DIAG,EPS,W,IFLAG,  &
+      subroutine LBFGS(N,M,X,F,G,DIAG,EPS,W,IFLAG,  &
                        GTOL,STPMIN,STPMAX,STP,ITER, &
                        INFO, NFEV,                  &
                        LINE_DGINIT,LINE_FINIT,      &
@@ -14,7 +13,8 @@
                        LINE_STY,LINE_FY,LINE_DGY,   &
                        LINE_STMIN,LINE_STMAX,       &
                        LINE_BRACKT,LINE_STAGE1,LINE_INFOC) BIND(C)
-      use iso_c_binding
+      use, intrinsic :: iso_c_binding
+      use, intrinsic :: iso_fortran_env, only : ERROR_UNIT
       implicit none
       real(C_DOUBLE),intent(inout) :: GTOL
       real(C_DOUBLE),intent(in),value :: STPMIN,STPMAX
@@ -160,14 +160,6 @@
 !    reference:
 ! 
 ! 
-!    MP  is an integer(C_INT) variable with default value 6. It is used as the
-!        unit number for the printing of the monitoring information
-!        controlled by IPRINT.
-! 
-!    LP  is an integer(C_INT) variable with default value 6. It is used as the
-!        unit number for the printing of error messages. This printing
-!        may be suppressed by setting LP to a non-positive value.
-! 
 !    GTOL is a real(C_DOUBLE) variable with default value 0.9, which
 !        controls the accuracy of the line search routine MCSRCH. If the
 !        function and gradient evaluations are inexpensive with respect
@@ -191,10 +183,6 @@
 ! 
 !
 !    Other routines called directly:   MCSRCH
-! 
-!    Input/Output  :  No input; diagnostic messages on unit MP and
-!                     error messages on unit LP.
-! 
 ! 
 !
 !     THE WORK VECTOR W IS DIVIDED AS FOLLOWS:
@@ -248,25 +236,46 @@
 
       ISPT = N + 2 * M
       IYPT = ISPT + N * M     
-      POINT = MAX(0,MOD(ITER-1,M))
+      POINT = MAX( 0 , MOD(ITER-1,M) )
       NPT = POINT * N
-
-      GO TO (10,172) IFLAG+1
-
-     
-  10  CONTINUE
-
-      W(ISPT+1:ISPT+N) = -G(1:N) * DIAG(1:N)
+      ITER  = ITER + 1
+      BOUND = MIN( ITER-1 , M)
       GNORM = NORM2(G(:))
 !
+!     TERMINATION TEST
+!     ----------------
 !
-!    --------------------
-!     MAIN ITERATION LOOP
-!    --------------------
+      XNORM = NORM2(X)
+      XNORM = MAX(1.0D0,XNORM)
+      IF ( GNORM / XNORM < EPS ) THEN
+        IFLAG = 0
+        RETURN
+      ENDIF
+
+
+      !
+      ! Entering the subroutine with a new position and gradient
+      ! or entering for the first time ever
+      if( IFLAG == 1 ) then
+        call MCSRCH(N,X,F,G,W(ISPT+POINT*N+1),STP,FTOL,MAXFEV,INFO,NFEV, &
+                    DIAG,GTOL,STPMIN,STPMAX,LINE_DGINIT,LINE_FINIT, &
+                    LINE_STX,LINE_FX,LINE_DGX, &
+                    LINE_STY,LINE_FY,LINE_DGY, &
+                    LINE_STMIN,LINE_STMAX, &
+                    LINE_BRACKT,LINE_STAGE1,LINE_INFOC)
 !
- 80   ITER  = ITER + 1
+!       COMPUTE THE NEW STEP AND GRADIENT CHANGE 
+!
+        NPT = POINT * N
+        W(ISPT+NPT+1:ISPT+NPT+N) = STP * W(ISPT+NPT+1:ISPT+NPT+N)
+        W(IYPT+NPT+1:IYPT+NPT+N) = G(1:N) - W(1:N)
+
+      else
+        W(ISPT+1:ISPT+N) = -G(1:N) * DIAG(1:N)
+      endif
+
       INFO  = 0
-      BOUND = MIN( ITER-1 , M)
+
 
       IF( ITER /= 1 ) THEN
 
@@ -323,9 +332,9 @@
       STP = ONE
       W(1:N) = G(1:N)
 
- 172  CONTINUE
+
       if( DEBUG ) then
-        write(UNITDEBUG,*) 'INFO BEFORE MCSRCH',INFO
+        write(UNITDEBUG,*) 'INFO before second call to MCSRCH',INFO
       endif
       CALL MCSRCH(N,X,F,G,W(ISPT+POINT*N+1),STP,FTOL,MAXFEV,INFO,NFEV, &
                   DIAG,GTOL,STPMIN,STPMAX,LINE_DGINIT,LINE_FINIT, &
@@ -334,40 +343,21 @@
                   LINE_STMIN,LINE_STMAX, &
                   LINE_BRACKT,LINE_STAGE1,LINE_INFOC)
       if( DEBUG ) then
-        write(UNITDEBUG,*) 'X:',X(:)
+        write(UNITDEBUG,*) 'INFO after  second call to MCSRCH',INFO
       endif
 
       IF (INFO  ==  -1) THEN
         IFLAG = 1
         RETURN
-      ENDIF
-      IF (INFO /= 1) THEN
+      else
         IFLAG = -1
-        WRITE(LP,'(/,a,i4,/,a,/,a,i4)') ' IFLAG= ',IFLAG,  &
+        WRITE(ERROR_UNIT,'(/,a,i4,/,a,/,a,i4)') ' IFLAG= ',IFLAG,  &
                                    ' LINE SEARCH FAILED ', &
                                    ' ERROR RETURNED FROM LINE SEARCH ',INFO
         RETURN
       ENDIF
-!
-!     COMPUTE THE NEW STEP AND GRADIENT CHANGE 
-!     -----------------------------------------
-!
-      NPT = POINT * N
-      W(ISPT+NPT+1:ISPT+NPT+N) = STP * W(ISPT+NPT+1:ISPT+NPT+N)
-      W(IYPT+NPT+1:IYPT+NPT+N) = G(1:N) - W(1:N)
-!
-!     TERMINATION TEST
-!     ----------------
-!
-      GNORM = NORM2(G)
-      XNORM = NORM2(X)
-      XNORM = MAX(1.0D0,XNORM)
 
-      IF ( GNORM/XNORM < EPS ) THEN
-        IFLAG = 0
-        RETURN
-      ENDIF
-      GO TO 80
+
 !
 !     ------------------------------------------------------------
 !     END OF MAIN ITERATION LOOP. ERROR EXITS.
@@ -387,7 +377,8 @@
                         GTOL,STPMIN,STPMAX,DGINIT,FINIT, &
                         STX,FX,DGX,STY,FY,DGY,STMIN,STMAX, &
                         BRACKT,STAGE1,INFOC)
-      use iso_c_binding
+      use, intrinsic :: iso_c_binding
+      use, intrinsic :: iso_fortran_env, only : ERROR_UNIT
       implicit none
       real(C_DOUBLE),intent(in)     :: GTOL,STPMIN,STPMAX
       integer(C_INT),intent(in)     :: N,MAXFEV
@@ -559,7 +550,7 @@
       DGINIT = DOT_PRODUCT( G , S )
 
       IF (DGINIT > ZERO) then
-        WRITE(LP,'(a)') ' THE SEARCH DIRECTION IS NOT A DESCENT'
+        WRITE(ERROR_UNIT,'(a)') ' THE SEARCH DIRECTION IS NOT A DESCENT'
         RETURN
       ENDIF
 !
@@ -708,7 +699,7 @@
 
 
       SUBROUTINE MCSTEP(STX,FX,DX,STY,FY,DY,STP,FP,DP,BRACKT,STPMIN,STPMAX,INFO)
-      use iso_c_binding
+      use, intrinsic :: iso_c_binding
       implicit none
       integer(C_INT) INFO
       real(C_DOUBLE) STX,FX,DX,STY,FY,DY,STP,FP,DP,STPMIN,STPMAX
