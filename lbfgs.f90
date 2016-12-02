@@ -246,16 +246,15 @@
       FTOL = 1.0D-4
       MAXFEV = 20
 
-      ISPT= N+2*M
-      IYPT= ISPT+N*M     
+      ISPT = N + 2 * M
+      IYPT = ISPT + N * M     
       POINT = MAX(0,MOD(ITER-1,M))
       NPT = POINT * N
 
-      GO TO (10,172,100) IFLAG+1
+      GO TO (10,172) IFLAG+1
 
      
   10  CONTINUE
-      if( DEBUG ) WRITE(*,*) 'NO INITIAL DIAG'
 
       W(ISPT+1:ISPT+N) = -G(1:N) * DIAG(1:N)
       GNORM = NORM2(G(:))
@@ -269,75 +268,64 @@
       INFO  = 0
       BOUND = MIN( ITER-1 , M)
 
-      IF( ITER == 1 ) GO TO 165
+      IF( ITER /= 1 ) THEN
 
-      YS = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(ISPT+NPT+1:ISPT+NPT+N) )
-      if( DEBUG ) WRITE(*,*) ' -> UPDATE DIAG'
-      YY = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(IYPT+NPT+1:IYPT+NPT+N) )
-      DIAG(1:N)= YS / YY
+        YS = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(ISPT+NPT+1:ISPT+NPT+N) )
+        YY = DOT_PRODUCT( W(IYPT+NPT+1:IYPT+NPT+N) , W(IYPT+NPT+1:IYPT+NPT+N) )
+        DIAG(1:N)= YS / YY
 
 !
-!     COMPUTE -H*G USING THE FORMULA GIVEN IN: Nocedal, J. 1980,
-!     "Updating quasi-Newton matrices with limited storage",
-!     Mathematics of Computation, Vol.24, No.151, pp. 773-782.
-!     ---------------------------------------------------------
+!       COMPUTE -H*G USING THE FORMULA GIVEN IN: Nocedal, J. 1980,
+!       "Updating quasi-Newton matrices with limited storage",
+!       Mathematics of Computation, Vol.24, No.151, pp. 773-782.
+!       ---------------------------------------------------------
 !
- 100  CONTINUE
-      POINT = MODULO(ITER - 1,M)
-      CP = POINT
-      IF (POINT == 0) CP = M
-      W(N+CP)= ONE/YS
-      W(1:N)= -G(1:N)
+        POINT = MODULO(ITER - 1,M)
+        CP = POINT
+        IF (POINT == 0) CP = M
+        W(N+CP)= ONE/YS
+        W(1:N)= -G(1:N)
 
-      CP = POINT
-      DO I= 1,BOUND
-         CP = CP - 1
-         IF (CP ==  -1) CP = M - 1
-         SQ= DOT_PRODUCT(W(ISPT+CP*N+1:ISPT+CP*N+N),W(1:N))
-         INMC=N+M+CP+1
-         IYCN=IYPT+CP*N
-         W(INMC)= W(N+CP+1) * SQ
-         W(1:N) = W(1:N) - W(INMC) * W(IYCN+1:IYCN+N)
-      ENDDO     
+        CP = POINT
+        DO I= 1,BOUND
+           CP = CP - 1
+           IF (CP ==  -1) CP = M - 1
+           SQ= DOT_PRODUCT(W(ISPT+CP*N+1:ISPT+CP*N+N),W(1:N))
+           INMC=N+M+CP+1
+           IYCN=IYPT+CP*N
+           W(INMC)= W(N+CP+1) * SQ
+           W(1:N) = W(1:N) - W(INMC) * W(IYCN+1:IYCN+N)
+        ENDDO     
+
+        W(1:N) = DIAG(1:N) * W(1:N)
+
+        DO I=1,BOUND
+           YR = DOT_PRODUCT(W(IYPT+CP*N+1:IYPT+CP*N+N),W(1:N))
+           BETA = W(N+CP+1) * YR
+           INMC = N + M + CP + 1
+           BETA = W(INMC) - BETA
+           ISCN = ISPT + CP * N
+           W(1:N) = W(1:N) + BETA * W(ISCN+1:ISCN+N)
+           CP = CP + 1
+           IF (CP == M) CP = 0
+        ENDDO
+   
 !
-      W(1:N) = DIAG(1:N) * W(1:N)
-!
-      DO I=1,BOUND
-         YR = DOT_PRODUCT(W(IYPT+CP*N+1:IYPT+CP*N+N),W(1:N))
-         BETA = W(N+CP+1) * YR
-         INMC = N + M + CP + 1
-         BETA = W(INMC) - BETA
-         ISCN = ISPT + CP * N
-         W(1:N) = W(1:N) + BETA * W(ISCN+1:ISCN+N)
-         CP = CP + 1
-         IF (CP == M) CP = 0
-      ENDDO
-!
-!     STORE THE NEW SEARCH DIRECTION
-!     ------------------------------
-!
-      W(ISPT+POINT*N+1:ISPT+POINT*N+N) = W(1:N)
+!       STORE THE NEW SEARCH DIRECTION
+        W(ISPT+POINT*N+1:ISPT+POINT*N+N) = W(1:N)
+
+      ENDIF
 !
 !     OBTAIN THE ONE-DIMENSIONAL MINIMIZER OF THE FUNCTION 
 !     BY USING THE LINE SEARCH ROUTINE MCSRCH
 !     ----------------------------------------------------
- 165  NFEV = 0
-      IF (ITER == 1) THEN
-!        STP = ONE / GNORM
-        if( DEBUG ) then
-          write(UNITDEBUG,*) 'HACK starting STP'
-        endif
-        STP = ONE ! 0.25_C_DOUBLE
-      ELSE
-        STP = ONE 
-      ENDIF
+      NFEV = 0
+      STP = ONE
       W(1:N) = G(1:N)
 
  172  CONTINUE
       if( DEBUG ) then
         write(UNITDEBUG,*) 'INFO BEFORE MCSRCH',INFO
-        write(UNITDEBUG,*) 'STP  BEFORE MCSRCH',STP
-        write(UNITDEBUG,*) 'LINE_BRACKT,LINE_STAGE1 ? ?',LINE_BRACKT,LINE_STAGE1
       endif
       CALL MCSRCH(N,X,F,G,W(ISPT+POINT*N+1),STP,FTOL,MAXFEV,INFO,NFEV, &
                   DIAG,GTOL,STPMIN,STPMAX,LINE_DGINIT,LINE_FINIT, &
@@ -350,11 +338,11 @@
       endif
 
       IF (INFO  ==  -1) THEN
-        IFLAG=1
+        IFLAG = 1
         RETURN
       ENDIF
       IF (INFO /= 1) THEN
-        IFLAG=-1
+        IFLAG = -1
         WRITE(LP,'(/,a,i4,/,a,/,a,i4)') ' IFLAG= ',IFLAG,  &
                                    ' LINE SEARCH FAILED ', &
                                    ' ERROR RETURNED FROM LINE SEARCH ',INFO
@@ -371,12 +359,12 @@
 !     TERMINATION TEST
 !     ----------------
 !
-      GNORM= NORM2(G)
-      XNORM= NORM2(X)
-      XNORM= MAX(1.0D0,XNORM)
+      GNORM = NORM2(G)
+      XNORM = NORM2(X)
+      XNORM = MAX(1.0D0,XNORM)
 
       IF ( GNORM/XNORM < EPS ) THEN
-        IFLAG=0
+        IFLAG = 0
         RETURN
       ENDIF
       GO TO 80
@@ -561,7 +549,7 @@
 !
 !     CHECK THE INPUT PARAMETERS FOR ERRORS.
 !
-      IF (N <= 0 .OR. STP <= ZERO .OR. FTOL < ZERO .OR.  &
+      IF ( STP <= ZERO .OR. FTOL < ZERO .OR.  &
           GTOL < ZERO .OR. XTOL < ZERO .OR. STPMIN < ZERO &
           .OR. STPMAX < STPMIN ) RETURN
 !
@@ -579,28 +567,12 @@
 !
 
 
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'SET BRACKT',BRACKT
-        write(UNITDEBUG,*) 'SET STAGE1',STAGE1
-      endif
       BRACKT = .FALSE.
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'SET BRACKT',BRACKT
-        write(UNITDEBUG,*) 'SET STAGE1',STAGE1
-      endif
       STAGE1 = .TRUE.
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'SET STAGE1',STAGE1
-      endif
       NFEV = 0
       FINIT = F
       DGTEST = FTOL * DGINIT
-      if( DEBUG ) write(*,*) 'override WA'
       WA(:) = X(:)
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'SET BRACKT',BRACKT
-      endif
-
 
 
 !
@@ -633,17 +605,11 @@
          STMIN = STX
          STMAX = STP + XTRAPF*(STP - STX)
       END IF
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'STP       ',STP
-      endif
 !
 !     FORCE THE STEP TO BE WITHIN THE BOUNDS STPMAX AND STPMIN.
 !
       STP = MAX(STPMIN,STP)
       STP = MIN(STP,STPMAX)
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'STP       ',STP
-      endif
 !
 !     IF AN UNUSUAL TERMINATION IS TO OCCUR THEN LET
 !     STP BE THE LOWEST POINT OBTAINED SO FAR.
@@ -652,14 +618,6 @@
          .OR. NFEV >= MAXFEV-1 .OR. INFOC  ==  0 &
          .OR. (BRACKT .AND. STMAX-STMIN <= XTOL*STMAX)) STP = STX
 
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'BRACKT',BRACKT
-        write(UNITDEBUG,*) (BRACKT .AND. (STP <= STMIN .OR. STP >= STMAX))
-        write(UNITDEBUG,*) NFEV >= MAXFEV-1
-        write(UNITDEBUG,*) INFOC  ==  0 
-        write(UNITDEBUG,*) (BRACKT .AND. STMAX-STMIN <= XTOL*STMAX)
-        write(UNITDEBUG,*) 'STP       ',STP
-      endif
 !
 !     EVALUATE THE FUNCTION AND GRADIENT AT STP
 !     AND COMPUTE THE DIRECTIONAL DERIVATIVE.
@@ -667,12 +625,7 @@
 !
       X(:) = WA(:) + STP * S(:)
       INFO = -1
-      if( DEBUG ) then
-        write(UNITDEBUG,*) 'here STP',STP
-        write(UNITDEBUG,*) 'here WA',WA(:)
-        write(UNITDEBUG,*) 'here S',S(:)
-        write(UNITDEBUG,*) 'here X',X(:)
-      endif
+
       RETURN
 !
    45 INFO = 0
