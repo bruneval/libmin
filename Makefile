@@ -18,11 +18,14 @@ test_fortran.o: test_fortran.f90 libmin.f03
 test_c.o: test_c.c libmin.h
 	$(CC) -c test_c.c
 
-libmin.a: libmin.o lbfgs.o libmin.h
-	$(AR) -cr libmin.a libmin.o lbfgs.o
+libmin.a: libmin.o lbfgs.o mcsrch.o libmin.h
+	$(AR) -cr libmin.a libmin.o mcsrch.o lbfgs.o
 
 lbfgs.o: lbfgs.f90 libmin.h
 	$(FC) -c $(CPP) lbfgs.f90
+
+mcsrch.o: mcsrch.f90 libmin.h
+	$(FC) -c $(CPP) mcsrch.f90
 
 libmin.o: libmin.c libmin.h
 	$(CC) -c libmin.c 
