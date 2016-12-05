@@ -1,6 +1,7 @@
 FC=gfortran # -g -fbacktrace -fcheck=all
-CC=gcc      # -g
+CC=gcc     # -g
 CPP=-cpp
+FORTRANLIB=-lgfortran
 
 .PHONY: clean tarball
 
@@ -10,7 +11,7 @@ test_fortran: test_fortran.o libmin.a
 	$(FC) -o test_fortran test_fortran.o -L. -lmin 
 
 test_c: test_c.o libmin.a libmin.h
-	$(CC) -o test_c test_c.o  -L. -lmin -lgfortran -lm
+	$(CC) -o test_c test_c.o  -L. -lmin -lm  $(FORTRANLIB)
 
 test_fortran.o: test_fortran.f90 libmin.f03
 	$(FC) -c $(CPP) test_fortran.f90
@@ -19,7 +20,7 @@ test_c.o: test_c.c libmin.h
 	$(CC) -c test_c.c
 
 libmin.a: libmin.o lbfgs.o mcsrch.o libmin.h
-	$(AR) -cr libmin.a libmin.o mcsrch.o lbfgs.o
+	$(AR) -crs libmin.a libmin.o mcsrch.o lbfgs.o
 
 lbfgs.o: lbfgs.f90 libmin.h
 	$(FC) -c $(CPP) lbfgs.f90
