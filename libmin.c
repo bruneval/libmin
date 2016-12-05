@@ -25,9 +25,9 @@ libmin_plan * libmin_init(int ndim, int history_record)
   p->work = malloc(nwork*sizeof(double));
 
   p->gtol = 0.9;
-  p->stpmin = 1.0e-20;
-  p->stpmax = 1.0e+20;
-  p->stp    = 1.0;
+  p->line_stpmin = 1.0e-20;
+  p->line_stpmax = 1.0e+20;
+  p->line_stp    = 1.0;
   
   for(i=0; i<ndim; i++) p->diag[i] = 1.0;
 
@@ -55,9 +55,9 @@ libmin_plan * libmin_init_diag(int ndim, int history_record, double *diag)
   p->work = malloc(nwork*sizeof(double));
 
   p->gtol = 0.9;
-  p->stpmin = 1.0e-20;
-  p->stpmax = 1.0e+20;
-  p->stp    = 1.0;
+  p->line_stpmin = 1.0e-20;
+  p->line_stpmax = 1.0e+20;
+  p->line_stp    = 1.0;
   
   for(i=0; i<ndim; i++) {
     assert( diag[i] > 0.0 );
@@ -85,7 +85,7 @@ int libmin_execute(libmin_plan *p, double *x, double f, double *gradf)
 {
 
  lbfgs(p->ndim, p->history_record, x, f, gradf, p->diag, p->work, &(p->status),
-       &(p->gtol), p->stpmin, p->stpmax, &(p->stp), &(p->iter), 
+       &(p->gtol), p->line_stpmin, p->line_stpmax, &(p->line_stp), &(p->iter), 
        &(p->line_info), &(p->line_nfev),
        &(p->line_dginit), &(p->line_finit),
        &(p->line_stx),  &(p->line_fx),  &(p->line_dgx),
