@@ -41,35 +41,17 @@ libmin_plan * libmin_init(int ndim, int history_record)
 libmin_plan * libmin_init_diag(int ndim, int history_record, double *diag)
 {
   int i;
-  int nwork;
   libmin_plan *p;
-  p = (libmin_plan*)malloc(sizeof(libmin_plan));
 
-  p->status = 0;
-  p->iter   = 0;
-  p->ndim = ndim;
-  p->history_record = history_record;
-  p->diag = malloc(ndim*sizeof(double));
-
-  nwork = ndim * ( 2 * history_record + 1 ) + 2 * history_record;
-  p->work = malloc(nwork*sizeof(double));
-
-  p->gtol = 0.9;
-  p->line_stpmin = 1.0e-20;
-  p->line_stpmax = 1.0e+20;
-  p->line_stp    = 1.0;
+  p = libmin_init(ndim, history_record);
   
   for(i=0; i<ndim; i++) {
     assert( diag[i] > 0.0 );
     p->diag[i] = diag[i];
   }
 
-  assert(p->ndim > 0);
-  assert(p->history_record > 0);
-
   return p;
 }
-
 
 
 
